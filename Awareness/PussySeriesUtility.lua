@@ -736,7 +736,7 @@ function PussyUtility:ScanWards()
 				end
 				if NewWard then 
 					local wardExpire
-					if ward.valid and ward.isAlly then
+					if ward.valid and ward.isEnemy then
 						for i = 1, ward.buffCount do
 							local buff = ward:GetBuff(i);
 							if (buff.count > 0) and (buff.expireTime > buff.startTime) then 
