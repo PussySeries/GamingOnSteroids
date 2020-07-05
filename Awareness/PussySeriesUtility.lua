@@ -229,8 +229,8 @@ end
 
 function PussyUtility:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "PUtility", name = "PussySeries Utility"})
-	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate + SeriesDev"}})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.01"}})
+	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate & SeriesDev"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.02"}})
 
 	-- Movenment Tracker --	
 	self.Menu:MenuElement({id = "circle", name = "Movement Circle", type = MENU })	
@@ -287,7 +287,8 @@ function PussyUtility:LoadMenu()
 	
 	-- Level Spells --
 	self.Menu:MenuElement({id = "lvl", name = "Auto Level Spells", type = MENU })		
-		self.Menu.lvl:MenuElement({id = "on", name = "Enabled [Starts with LvL 2]", value = true})
+		self.Menu.lvl:MenuElement({id = "on".. myHero.charName, name = "Enabled", value = true})
+		self.Menu.lvl:MenuElement({id = "LvL".. myHero.charName, name = "Auto level start -->", value = 2, min = 1, max = 6, step = 1})
 		self.Menu.lvl:MenuElement({id = myHero.charName, name = "Skill Order", value = 1, drop = {"QWE", "WEQ", "EQW", "EWQ", "WQE", "QEW"}})
 end		
 
@@ -370,13 +371,13 @@ end
 	
 function PussyUtility:AutoLevel()
 	local levelUP = false
-	if self.Menu.lvl.on:Value() and not levelUP then
+	if self.Menu.lvl["on".. myHero.charName]:Value() and not levelUP then
 		local actualLevel = myHero.levelData.lvl
 		local levelPoints = myHero.levelData.lvlPts
 
-		if actualLevel == 18 and levelPoints == 0 or actualLevel == 1 then return end
+		if actualLevel == 18 and levelPoints == 0 then return end
 
-		if levelPoints > 0 then
+		if levelPoints > 0 and actualLevel >= self.Menu.lvl["LvL".. myHero.charName]:Value() then
 			local mode = self.Menu.lvl[myHero.charName]:Value()
 			if mode == 1 then
 				skillingOrder = {'Q','W','E','Q','Q','R','Q','W','Q','W','R','W','W','E','E','R','E','E'}
@@ -736,7 +737,7 @@ function PussyUtility:ScanWards()
 				end
 				if NewWard then 
 					local wardExpire
-					if ward.valid and ward.isEnemy then
+					if ward.valid and ward.isAlly then
 						for i = 1, ward.buffCount do
 							local buff = ward:GetBuff(i);
 							if (buff.count > 0) and (buff.expireTime > buff.startTime) then 
