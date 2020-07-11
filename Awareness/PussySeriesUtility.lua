@@ -1,7 +1,7 @@
 -- [ AutoUpdate ]
 do
     
-    local Version = 0.04
+    local Version = 0.05
     
     local Files = {
         Lua = {
@@ -243,7 +243,7 @@ end
 function PussyUtility:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "PUtility", name = "PussySeries Utility"})
 	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate & SeriesDev"}})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.04"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.05"}})
 
 	-- Movenment Tracker --	
 	self.Menu:MenuElement({id = "circle", name = "Movement Circle", type = MENU })	
@@ -369,7 +369,7 @@ function PussyUtility:Tick()
 		if Game.Timer() >= 10 then
 			local SearchChamp = true
 			if SearchChamp == true then
-				if hero and hero.isAlly then
+				if hero and hero.isEnemy then
 					if hero.charName == "Teemo" then
 						self.FoundTeemo = true
 					end
@@ -389,7 +389,7 @@ function PussyUtility:Tick()
 				end
 			end
 
-			if hero and hero.isAlly and self.Menu.Trap.TEnabled:Value() then	
+			if hero and hero.isEnemy and self.Menu.Trap.TEnabled:Value() then	
 				self:ScanTrap(hero)	
 				self:RemoveTrap()
 			end
@@ -952,7 +952,7 @@ function PussyUtility:ScanWards()
 				end
 				if NewWard then 
 					local wardExpire
-					if ward.valid and ward.isAlly then
+					if ward.valid and ward.isEnemy then
 						for i = 1, ward.buffCount do
 							local buff = ward:GetBuff(i);
 							if (buff.count > 0) and (buff.expireTime > buff.startTime) then 
