@@ -1,7 +1,7 @@
 -- [ AutoUpdate ]
 do
     
-    local Version = 0.03
+    local Version = 0.04
     
     local Files = {
         Lua = {
@@ -149,6 +149,8 @@ local GameMinionCount = Game.MinionCount
 local GameMinion = Game.Minion
 local GameTurretCount = Game.TurretCount
 local GameTurret = Game.Turret
+local GameObjectCount = Game.ObjectCount
+local GameObject = Game.Object
 local DrawRect = Draw.Rect
 local DrawCircle = Draw.Circle
 local DrawColor = Draw.Color
@@ -221,16 +223,27 @@ end
 class "PussyUtility"
 
 function PussyUtility:__init()
-	Callback.Add("Load", function() self:OnLoad() end)
     self:LoadMenu()
+	Callback.Add("Load", function() self:OnLoad() end)
 	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("Draw", function() self:OnDraw() end)
+	
+	self.TeemoTraps = {}
+	self.NidaTraps = {}
+	self.JhinTraps = {}
+	self.ShacoTraps = {}
+	self.MaoTraps = {}	
+	self.FoundTeemo = false
+	self.FoundNida = false
+	self.FoundJhin = false
+	self.FoundShaco = false	
+	self.FoundMao = false		
 end
 
 function PussyUtility:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "PUtility", name = "PussySeries Utility"})
 	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate & SeriesDev"}})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.02"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.04"}})
 
 	-- Movenment Tracker --	
 	self.Menu:MenuElement({id = "circle", name = "Movement Circle", type = MENU })	
@@ -285,6 +298,16 @@ function PussyUtility:LoadMenu()
 			self.Menu.Warding.Farsight:MenuElement({id = "ScreenDisplay", name = "Show On Screen", value = true})
 			self.Menu.Warding.Farsight:MenuElement({id = "VisionDisplay", name = "Show Ward Vision", value = true})
 	
+	-- Trap Tracker --
+	self.Menu:MenuElement({id = "Trap", name = "Trap Tracker", type = MENU })
+		self.Menu.Trap:MenuElement({id = "TEnabled", name = "Draw Enemy Traps", value = true})
+		self.Menu.Trap:MenuElement({id = "Nida", name = "Use on Nidalee", value = true})
+		self.Menu.Trap:MenuElement({id = "Teemo", name = "Use on Teemo", value = true})
+		self.Menu.Trap:MenuElement({id = "Shaco", name = "Use on Shaco", value = true})
+		self.Menu.Trap:MenuElement({id = "Jhin", name = "Use on Jhin", value = true})
+		self.Menu.Trap:MenuElement({id = "Mao", name = "Use on Maokai", value = true})		
+		self.Menu.Trap:MenuElement({id = "FontSize", name = "Text Size", value = 12, min = 10, max = 60})			
+	
 	-- Level Spells --
 	self.Menu:MenuElement({id = "lvl", name = "Auto Level Spells", type = MENU })		
 		self.Menu.lvl:MenuElement({id = "on".. myHero.charName, name = "Enabled", value = true})
@@ -293,15 +316,25 @@ function PussyUtility:LoadMenu()
 end		
 
 function PussyUtility:OnDraw()	
-	self:DrawJungle()
-	self:DrawMovement()
-	self:Recall()
-	self:DrawGank()
-	self:DrawCD()
-	self:DrawWard()
+	if Game.Timer() >= 10 then
+		self:DrawJungle()
+		self:DrawMovement()
+		self:Recall()
+		self:DrawGank()
+		self:DrawCD()
+		self:DrawWard()
+		if self.Menu.Trap.TEnabled and self.Menu.Trap.TEnabled:Value() then
+			self:TrapTracker()
+		end
+	end	
 end
 
 function PussyUtility:Tick()
+		local currSpell = myHero.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling then
+			print(currSpell.name)
+		end	
+	
 	for i = 1, GameHeroCount() do
 	local hero = GameHero(i)
 		
@@ -332,12 +365,43 @@ function PussyUtility:Tick()
 			invChamp[hero.networkID].lastPos = hero.pos
 			invChamp[hero.networkID].status = false
 		end
+		
+		if Game.Timer() >= 10 then
+			local SearchChamp = true
+			if SearchChamp == true then
+				if hero and hero.isAlly then
+					if hero.charName == "Teemo" then
+						self.FoundTeemo = true
+					end
+					if hero.charName == "Shaco" then
+						self.FoundShaco = true
+					end
+					if hero.charName == "Jhin" then
+						self.FoundJhin = true
+					end
+					if hero.charName == "Nidalee" then
+						self.FoundNida = true
+					end
+					if hero.charName == "Maokai" then
+						self.FoundMao = true
+					end					
+					SearchChamp = false
+				end
+			end
+
+			if hero and hero.isAlly and self.Menu.Trap.TEnabled:Value() then	
+				self:ScanTrap(hero)	
+				self:RemoveTrap()
+			end
+		end	
 	end
-	
-	self:AutoLevel()
-	self:TowerTracker()
-	self:ScanWards()
-	self:CheckJungleCamps()	
+
+	if Game.Timer() >= 10 then
+		self:ScanWards()
+		self:AutoLevel()
+		self:TowerTracker()
+		self:CheckJungleCamps()				
+	end		
 	
 	function OnProcessRecall(unit,recall)
 	if isRecalling[unit.networkID] == nil then return end
@@ -368,6 +432,167 @@ function PussyUtility:Tick()
 		end
 	end	
 end
+	
+function PussyUtility:ScanTrap(unit)	
+		
+	if self.FoundTeemo and self.Menu.Trap.Teemo:Value() and unit.charName == "Teemo" then
+		local currSpell = unit.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling and currSpell.name == "TeemoRCast" then
+			DelayAction(function()
+				for i = 0, GameObjectCount() do
+					local Trap = GameObject(i)
+					local NewTrap = true
+					if Trap and Trap.charName == "TeemoMushroom" then
+						for i = 1, #self.TeemoTraps do
+							if self.TeemoTraps[i].networkID == Trap.networkID then
+								NewTrap = false
+							end
+						end				
+						
+						if NewTrap then 
+							TableInsert(self.TeemoTraps, Trap)
+						end	
+					end
+				end
+			end,0.5)	
+		end
+	end
+
+	if self.FoundShaco and self.Menu.Trap.Shaco:Value() and unit.charName == "Shaco" then
+		local currSpell = unit.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling and currSpell.name == "JackInTheBox" then
+			DelayAction(function()
+				for i = 0, GameObjectCount() do
+					local Trap = GameObject(i)
+					local NewTrap = true
+					if Trap and Trap.charName == "ShacoBox" then
+						for i = 1, #self.ShacoTraps do
+							if self.ShacoTraps[i].networkID == Trap.networkID then
+								NewTrap = false
+							end
+						end				
+						
+						if NewTrap then 
+							TableInsert(self.ShacoTraps, Trap)
+						end	
+					end
+				end
+			end,0.5)	
+		end
+	end
+
+	if self.FoundJhin and self.Menu.Trap.Jhin:Value() and unit.charName == "Jhin" then
+		local currSpell = unit.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling and currSpell.name == "JhinE" then
+			DelayAction(function()
+				for i = 0, GameObjectCount() do
+					local Trap = GameObject(i)
+					local NewTrap = true
+					if Trap and Trap.charName == "JhinTrap" then
+						for i = 1, #self.JhinTraps do
+							if self.JhinTraps[i].networkID == Trap.networkID then
+								NewTrap = false
+							end
+						end				
+						
+						if NewTrap then 
+							TableInsert(self.JhinTraps, Trap)
+						end	
+					end
+				end
+			end,0.5)	
+		end
+	end	
+
+	if self.FoundNida and self.Menu.Trap.Nida:Value() and unit.charName == "Nidalee" then
+		local currSpell = unit.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling and currSpell.name == "Bushwhack" then
+			DelayAction(function()
+				for i = 0, GameObjectCount() do
+					local Trap = GameObject(i)
+					local NewTrap = true
+					if Trap and Trap.charName == "NidaleeSpear" then
+						for i = 1, #self.NidaTraps do
+							if self.NidaTraps[i].networkID == Trap.networkID then
+								NewTrap = false
+							end
+						end				
+						
+						if NewTrap then 
+							TableInsert(self.NidaTraps, Trap)
+						end	
+					end
+				end
+			end,0.5)	
+		end
+	end	
+
+	if self.FoundMao and self.Menu.Trap.Mao:Value() and unit.charName == "Maokai" then
+		local currSpell = unit.activeSpell
+		if currSpell and currSpell.valid and currSpell.isChanneling and currSpell.name == "MaokaiE" then
+			DelayAction(function()
+				for i = 0, GameObjectCount() do
+					local Trap = GameObject(i)
+					local NewTrap = true	
+					if Trap and Trap.charName == "MaokaiSproutling" then
+						for i = 1, #self.MaoTraps do
+							if self.MaoTraps[i].networkID == Trap.networkID then
+								NewTrap = false
+							end
+						end				
+						
+						if NewTrap then 
+							TableInsert(self.MaoTraps, Trap)
+						end	
+					end
+				end
+			end,0.5)	
+		end
+	end		
+end	
+
+function PussyUtility:RemoveTrap()
+	
+	if self.FoundTeemo and self.Menu.Trap.Teemo:Value() then
+		for i, Trap in ipairs(self.TeemoTraps) do			
+			if Trap.health == 0 then
+				TableRemove(self.TeemoTraps, i)
+			end				
+		end
+	end	
+	
+	if self.FoundShaco and self.Menu.Trap.Shaco:Value() then
+		for i, Trap in ipairs(self.ShacoTraps) do			
+			if Trap.health == 0 then
+				TableRemove(self.ShacoTraps, i)
+			end				
+		end
+	end
+
+	if self.FoundJhin and self.Menu.Trap.Jhin:Value() then
+		for i, Trap in ipairs(self.JhinTraps) do			
+			if Trap.health == 0 then
+				TableRemove(self.JhinTraps, i)
+			end				
+		end
+	end
+
+	if self.FoundNida and self.Menu.Trap.Nida:Value() then
+		for i, Trap in ipairs(self.NidaTraps) do			
+			if Trap.health == 0 then
+				TableRemove(self.NidaTraps, i)
+			end				
+		end
+	end
+
+	if self.FoundMao and self.Menu.Trap.Mao:Value() then
+		for i, Trap in ipairs(self.MaoTraps) do			
+			if Trap.health == 0 then
+				TableRemove(self.MaoTraps, i)
+			end				
+		end
+	end		
+end	
 	
 function PussyUtility:AutoLevel()
 	local levelUP = false
@@ -700,7 +925,10 @@ end
 function PussyUtility:CleanWards()
 	for i = 1, #wards do
 		local ward = wards[i]
-		local life = ward.expire - Game.Timer()
+		local life = 0
+		if ward and ward.expire then
+			life = ward.expire - Game.Timer()
+		end
 		if life <= 0 or ward.object == nil or ward.object.health <= 0 then
 			TableRemove(wards, i)
 			--print("Removed")
@@ -709,22 +937,9 @@ function PussyUtility:CleanWards()
 end	
 
 function PussyUtility:ScanWards()
-	--print(GameWardCount())
-	--[[for i = 1, 10 do
-		local ward = nil
-		local ok, err = pcall(function() ward = GameWard(i) end)
-		if (not ok) then
-			print('Ward Scan' .. err)
-		else
-			print(ward.charName)
-		end
-	end--]]
 	if self.Menu.Warding.EnabledScan:Value() then
-		--print(GameWardCount())
-		--print("And")
-		--print(#wards)
 		self:CleanWards()
-		if  Game.Timer() - LastWardScan > 0.9 then
+		if Game.Timer() - LastWardScan > 0.9 then
 			--print("Scanning")
 			for i = 1, GameWardCount() do
 				local ward = GameWard(i)
@@ -737,7 +952,7 @@ function PussyUtility:ScanWards()
 				end
 				if NewWard then 
 					local wardExpire
-					if ward.valid and ward.isEnemy then
+					if ward.valid and ward.isAlly then
 						for i = 1, ward.buffCount do
 							local buff = ward:GetBuff(i);
 							if (buff.count > 0) and (buff.expireTime > buff.startTime) then 
@@ -745,16 +960,16 @@ function PussyUtility:ScanWards()
 							end
 						end
 						local wardType = ward.maxHealth == 4 and "VisionWard" or ward.maxHealth == 3 and (ward.maxMana == 150 and "SightWard" or "Trinket") or ward.maxHealth == 1 and "Farsight" or "WTFISTHISWARD"
-						
-						TableInsert(wards, 1, {object = ward, expire = wardExpire, type = wardType, networkID = ward.networkID}) 
-						--print("Added Ward")
+						if wardExpire then
+							TableInsert(wards, 1, {object = ward, expire = wardExpire, type = wardType, networkID = ward.networkID})
+						end 
 					end
 				end
 			end
 			LastWardScan = Game.Timer()
 		end
 	end	
-end	
+end		
 
 function PussyUtility:DrawWard()
 	if self.Menu.Warding.Enabled:Value() then
@@ -959,6 +1174,67 @@ function PussyUtility:DrawCD()
 							Summon[hero:GetSpellData(SUMMONER_2).name]:Draw(barPos.x+offsetF, barPos.y+offsetY-2)
 						end						
 					end	
+				end
+			end
+		end
+	end	
+end
+
+function PussyUtility:TrapTracker()
+	
+	if self.FoundTeemo and self.Menu.Trap.Teemo:Value() then
+		for i, Trap in ipairs(self.TeemoTraps) do
+			if Trap then
+				DrawCircle(Trap.pos, 75, 3, DrawColor(255,255,0,0))
+				DrawText("Shroom", self.Menu.Trap.FontSize:Value(), Trap.pos2D.x, Trap.pos2D.y, DrawColor(255, 225, 255, 0))
+				if Trap.pos:DistanceTo(myHero.pos) <= 1500 then
+					DrawCircle(Trap.pos, 450, 3, DrawColor(255,0,255,0))
+				end
+			end
+		end
+	end	
+	
+	if self.FoundShaco and self.Menu.Trap.Shaco:Value() then
+		for i, Trap in ipairs(self.ShacoTraps) do
+			if Trap then
+				if Trap.pos:DistanceTo(myHero.pos) <= 1500 then
+					DrawCircle(Trap.pos, 75, 3, DrawColor(255,255,0,0))
+					DrawText("Shaco Box", self.Menu.Trap.FontSize:Value(), Trap.pos2D.x, Trap.pos2D.y, DrawColor(255, 225, 255, 0))
+					DrawCircle(Trap.pos, 290, 3, DrawColor(255,0,255,0))
+				end
+			end
+		end
+	end		
+		
+	if self.FoundJhin and self.Menu.Trap.Jhin:Value() then
+		for i, Trap in ipairs(self.JhinTraps) do
+			if Trap then
+				if Trap.pos:DistanceTo(myHero.pos) <= 1500 then			
+					DrawCircle(Trap.pos, 75, 3, DrawColor(255,255,0,0))
+					DrawText("Jhin Trap", self.Menu.Trap.FontSize:Value(), Trap.pos2D.x, Trap.pos2D.y, DrawColor(255, 225, 255, 0))
+				end
+			end
+		end
+	end	
+
+	if self.FoundNida and self.Menu.Trap.Nida:Value() then
+		for i, Trap in ipairs(self.NidaTraps) do
+			if Trap then
+				if Trap.pos:DistanceTo(myHero.pos) <= 1500 then			
+					DrawCircle(Trap, 75, 3, DrawColor(255,255,0,0))
+					DrawText("Nida Trap", self.Menu.Trap.FontSize:Value(), Trap.pos2D.x, Trap.pos2D.y, DrawColor(255, 225, 255, 0))
+				end
+			end
+		end
+	end	
+	
+	if self.FoundMao and self.Menu.Trap.Mao:Value() then
+		for i, Trap in ipairs(self.MaoTraps) do
+			if Trap then
+				if Trap.pos:DistanceTo(myHero.pos) <= 1500 then			
+					DrawCircle(Trap.pos, 75, 3, DrawColor(255,255,0,0))
+					DrawText("Maokai Sap.", self.Menu.Trap.FontSize:Value(), Trap.pos2D.x, Trap.pos2D.y, DrawColor(255, 225, 255, 0))
+					DrawCircle(Trap.pos, 350, 3, DrawColor(255,0,255,0))
 				end
 			end
 		end
