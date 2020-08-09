@@ -29,7 +29,7 @@ local function AutoUpdate()
 	local CHAMP_PATH			= AUTO_PATH
 	local SCRIPT_URL			= "https://raw.githubusercontent.com/PussySeries/GamingOnSteroids/master/Champions/PussySeriesAio/"
 	local AUTO_URL				= "https://raw.githubusercontent.com/PussySeries/GamingOnSteroids/master/Champions/PussySeriesAio/"
-	local CHAMP_URL				= "https://github.com/PussySeries/GamingOnSteroids/tree/master/Champions/PussySeriesAio/Champions"
+	local CHAMP_URL				= "https://raw.githubusercontent.com/PussySeries/GamingOnSteroids/master/Champions/PussySeriesAio/Champions/"
 	local oldVersion			= "currentVersion.lua"
 	local newVersion			= "newVersion.lua"
 	--
@@ -108,12 +108,12 @@ local function AutoUpdate()
 		
 		
 		--Write the core module			
-		writeModule(readAll(AUTO_PATH..coreName))
-		writeModule(readAll(CHAMP_PATH..charName..dotlua))
+		writeModule(readAll(COMMON_PATH..coreName))
+		writeModule(readAll(COMMON_PATH..charName..dotlua))
 		
 				
 		--Load the active module
-		dofile(AUTO_PATH.."dynamicScript"..dotlua)
+		dofile(COMMON_PATH.."dynamicScript"..dotlua)
 		
     end	    
 	
@@ -137,7 +137,7 @@ local function AutoUpdate()
 			end
 		end
 		
-		if currentData.Core.Version < latestData.Core.Version or not FileExist(AUTO_PATH.."Core.lua") then
+		if currentData.Core.Version < latestData.Core.Version or not FileExist(AUTO_PATH.."PussySeriesCore.lua") then
 			DownloadFile(AUTO_URL, AUTO_PATH, "PussySeriesCore.lua")        
 			currentData.Core.Version = latestData.Core.Version
 		end
