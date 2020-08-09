@@ -1,3 +1,6 @@
+local PredLoaded = false
+local heroes = false 
+local IsLoaded = false
 local Allies, Enemies, EnemyTurrets, AllyTurrets = {}, {}, {}, {}
 local TEAM_ALLY = myHero.team
 local TEAM_ENEMY = 300 - myHero.team
@@ -10,6 +13,7 @@ local GameMinion = Game.Minion
 local GameTurretCount = Game.TurretCount
 local GameTurret = Game.Turret
 local GameIsChatOpen = Game.IsChatOpen
+local sqrt = math.sqrt
 local MathSqrt = math.sqrt
 local MathHuge = math.huge
 local TableInsert = table.insert
@@ -121,9 +125,6 @@ print ("range:  "..myHero.activeSpell.range)
 end
 ]]
 
-local heroes = false
-local checkCount = 0 
-local IsLoaded = false
 Callback.Add("Tick", function()  
 	if heroes == false then 
 		local EnemyCount = CheckLoadedEnemyies()		
@@ -134,15 +135,7 @@ Callback.Add("Tick", function()
 		end
 	else	
 		if not IsLoaded then
-			LoadScript()
-			DelayAction(function()
-				if not myHero.charName.Menu.MiscSet.Pred then IsLoaded = true return end
-				if myHero.charName.Menu.MiscSet.Pred.Change:Value() == 1 then
-					require('PremiumPrediction')
-				else
-					require('GGPrediction')
-				end	
-			end, 1)
+			_G[myHero.charName]()
 			IsLoaded = true
 		end	
 	end	
