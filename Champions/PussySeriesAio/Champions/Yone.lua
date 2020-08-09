@@ -39,7 +39,7 @@ local function GetEnemyHeroes()
 end 
 
 local function GetEnemyTurrets()
-	return Turrets
+	return EnemyTurrets
 end
 
 local function GetEnemyCount(range, pos)
@@ -322,7 +322,7 @@ function Yone:LoadMenu()
 	--Prediction
 	self.Menu.MiscSet:MenuElement({type = MENU, id = "Pred", name = "Prediction Mode"})
 	self.Menu.MiscSet.Pred:MenuElement({name = " ", drop = {"After change Prediction Typ press 2xF6"}})	
-	self.Menu.MiscSet.Pred:MenuElement({id = "Change", name = "Change Prediction Typ", value = 3, drop = {"Gamsteron Prediction", "Premium Prediction", "GGPrediction"}})	
+	self.Menu.MiscSet.Pred:MenuElement({id = "Change", name = "Change Prediction Typ", value = 2, drop = {"Premium Prediction", "GGPrediction"}})	
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredQ", name = "Hitchance[Q3]", value = 1, drop = {"Normal", "High", "Immobile"}})
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredW", name = "Hitchance[W]", value = 1, drop = {"Normal", "High", "Immobile"}})	
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredR", name = "Hitchance[R]", value = 1, drop = {"Normal", "High", "Immobile"}})	
@@ -338,7 +338,18 @@ end
 local EPos = false
 local CanCast = false
 
-function Yone:Tick()		
+
+function Yone:Tick()
+if IsLoaded and not PredLoaded then
+	DelayAction(function()
+		if self.Menu.MiscSet.Pred.Change:Value() == 1 then
+			require('PremiumPrediction')
+		else
+			require('GGPrediction')
+		end
+	end, 0.1)
+	PredLoaded = true
+end			
 
 if Ready(_E) and myHero.mana == 0 then
 	EPos = true
@@ -810,5 +821,3 @@ function Yone:Draw()
 		end	
 	end	
 end
-
-Yone()
