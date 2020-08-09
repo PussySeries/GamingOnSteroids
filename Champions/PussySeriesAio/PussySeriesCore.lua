@@ -136,8 +136,8 @@ Callback.Add("Tick", function()
 		if not IsLoaded then
 			LoadScript()
 			DelayAction(function()
-				if not [myHero.charName]Menu.Pred then IsLoaded = true return end
-				if [myHero.charName]Menu.Pred.Change:Value() == 1 then
+				if not myHero.charName.Menu.MiscSet.Pred then IsLoaded = true return end
+				if myHero.charName.Menu.MiscSet.Pred.Change:Value() == 1 then
 					require('PremiumPrediction')
 				else
 					require('GGPrediction')
