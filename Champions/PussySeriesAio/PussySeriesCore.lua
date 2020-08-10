@@ -1,7 +1,6 @@
 local PredLoaded = false
 local heroes = false 
 local IsLoaded = false
-local Allies, Enemies, EnemyTurrets, AllyTurrets = {}, {}, {}, {}
 local TEAM_ALLY = myHero.team
 local TEAM_ENEMY = 300 - myHero.team
 local TEAM_JUNGLE = 300
@@ -20,30 +19,21 @@ local TableInsert = table.insert
 local TableRemove = table.remove
 _G.LATENCY = 0.05
 
-local function GetObjects()
+local function GetEnemyHeroes()
+    local _EnemyHeroes = {}
     for i = 1, GameHeroCount() do
         local unit = GameHero(i)
-        if unit and unit.isEnemy then
-            TableInsert(Enemies, unit)
-		elseif unit and unit.isAlly and unit ~= myHero then
-			TableInsert(Allies, unit)
+        if unit.isEnemy then
+            TableInsert(_EnemyHeroes, unit)
         end
     end
-	
-	for i = 1, GameTurretCount() do
-		local turret = GameTurret(i)
-		if turret and turret.isEnemy then 
-			TableInsert(EnemyTurrets, turret) 
-		elseif turret and turret.isAlly then 
-			TableInsert(AllyTurrets, turret) 			
-		end
-	end	
+    return _EnemyHeroes
 end 
 
 local function CheckLoadedEnemyies()
 	local count = 0
-	for i, hero in ipairs(Enemies) do
-		if hero then
+	for i, unit in ipairs(GetEnemyHeroes()) do
+        if unit and unit.isEnemy then
 		count = count + 1
 		end
 	end
@@ -125,11 +115,11 @@ print ("range:  "..myHero.activeSpell.range)
 end
 ]]
 
-Callback.Add("Tick", function()  
+Callback.Add("Tick", function() 
 	if heroes == false then 
 		local EnemyCount = CheckLoadedEnemyies()		
-		if EnemyCount < 5 then
-			GetObjects()
+		if EnemyCount < 1 then
+			GetEnemyHeroes()
 		else
 			heroes = true
 		end
@@ -142,7 +132,7 @@ Callback.Add("Tick", function()
 end)
 
 local DrawTime = false
-Callback.Add("Draw", function() 
+Callback.Add("Draw", function() 	
 	if heroes == false then
 		Draw.Text(myHero.charName.." is searching Enemies !!", 24, myHero.pos2D.x - 50, myHero.pos2D.y + 195, Draw.Color(255, 255, 0, 0))
 	else
