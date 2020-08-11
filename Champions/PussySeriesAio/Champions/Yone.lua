@@ -144,7 +144,7 @@ local function CalcFullDmg(unit)
 	if Ready(_W) then
 		damage = damage + getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2)
 	end	
-	if Ready(_E) then
+	if Ready(_E) or myHero.mana > 0 then
 		damage = damage + EDmg
 	end	
 	if Ready(_R) then
@@ -254,7 +254,7 @@ function Yone:LoadMenu()
 	-- Q --
 	self.Menu.ComboSet:MenuElement({type = MENU, id = "Q", name = "Q Settings"})
 	self.Menu.ComboSet.Q:MenuElement({id = "UseQ1", name = "Use [Q] in Combo", value = true})	
-	self.Menu.ComboSet.Q:MenuElement({id = "UseQ2", name = "Stack [Q] on Minions", value = true})
+	self.Menu.ComboSet.Q:MenuElement({id = "UseQ2", name = "Stack [Q] on Minions", value = false})
 	self.Menu.ComboSet.Q:MenuElement({id = "UseQ3", name = "[Q3] Single Target", value = true})	
 	self.Menu.ComboSet.Q:MenuElement({id = "UseQ4", name = "[Q3] Focus Multiple Targets", value = true})		
 			
@@ -268,7 +268,7 @@ function Yone:LoadMenu()
 	self.Menu.ComboSet.E:MenuElement({id = "UseE1", name = "Use [E] in Combo", value = true})
 	self.Menu.ComboSet.E:MenuElement({id = "UseE2", name = "Save Life under Tower (E2 Back if can Tower kill you)", value = true})
 	self.Menu.ComboSet.E:MenuElement({id = "UseE3", name = "[E2] Back ( Back if Yone Hp lower than Slider )", value = true})
-	self.Menu.ComboSet.E:MenuElement({id = "Hp", name = "[E2] Back if Yone Hp lower than -->", value = 20, min = 0, max = 100, identifier = "%"})
+	self.Menu.ComboSet.E:MenuElement({id = "Hp", name = "[E2] Back if Yone Hp lower than -->", value = 5, min = 0, max = 100, identifier = "%"})
 	self.Menu.ComboSet.E:MenuElement({id = "UseE4", name = "[E2] Execute Target", value = true})
 	
 	
@@ -290,7 +290,7 @@ function Yone:LoadMenu()
 	self.Menu.Harass:MenuElement({id = "UseE", name = "Use [E] in Harass", value = true})
 	self.Menu.Harass:MenuElement({id = "UseE3", name = "[E2] Back (After Set Number of AA's)", value = true})
 	self.Menu.Harass:MenuElement({id = "E3AA", name = "[E2] Number Of Auto Attacks -->", value = 2, min = 1, max = 5, step = 1})
-	self.Menu.Harass:MenuElement({id = "UseE2", name = "[E2] Back ( Back if Yone Hp lower than Slider )", value = true})
+	self.Menu.Harass:MenuElement({id = "UseE2", name = "[E2] Back ( Back if Yone Hp lower than Slider )", value = false})
 	self.Menu.Harass:MenuElement({id = "Hp", name = "[E2] Back if Yone Hp lower than -->", value = 20, min = 0, max = 100, identifier = "%"})
 
 
@@ -322,7 +322,7 @@ function Yone:LoadMenu()
 	--Prediction
 	self.Menu.MiscSet:MenuElement({type = MENU, id = "Pred", name = "Prediction Mode"})
 	self.Menu.MiscSet.Pred:MenuElement({name = " ", drop = {"After change Prediction Typ press 2xF6"}})	
-	self.Menu.MiscSet.Pred:MenuElement({id = "Change", name = "Change Prediction Typ", value = 2, drop = {"Premium Prediction", "GGPrediction"}})	
+	self.Menu.MiscSet.Pred:MenuElement({id = "Change", name = "Change Prediction Typ", value = 1, drop = {"Premium Prediction", "GGPrediction"}})	
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredQ", name = "Hitchance[Q3]", value = 1, drop = {"Normal", "High", "Immobile"}})
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredW", name = "Hitchance[W]", value = 1, drop = {"Normal", "High", "Immobile"}})	
 	self.Menu.MiscSet.Pred:MenuElement({id = "PredR", name = "Hitchance[R]", value = 1, drop = {"Normal", "High", "Immobile"}})	
