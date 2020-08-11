@@ -129,7 +129,7 @@ local function GetLineTargetCount(source, Pos, delay, speed, width, range)
 	return Count
 end
 
-local function CalcFullDmg(unit)
+local function CalcFullDmg(unit, DmgSpell)
 	local QDmg     = Ready(_Q) and getdmg("Q", unit, myHero) or 0
 	local WDmg     = Ready(_W) and getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2) or 0
 	local RDmg 	   = Ready(_R) and getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2) or 0
@@ -137,7 +137,7 @@ local function CalcFullDmg(unit)
 	local CalcEDmg = (QDmg + WDmg + RDmg + AADmg) / 100
 	local EDmg     = ((myHero:GetSpellData(_E).level * 2.5) + 22.5) * CalcEDmg
 	local damage   = AADmg
-	
+	local pdamage = AADmg
 	if Ready(_Q) then
 		damage = damage + getdmg("Q", unit, myHero)
 	end	
@@ -149,8 +149,13 @@ local function CalcFullDmg(unit)
 	end	
 	if Ready(_R) then
 		damage = damage + getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2)
-	end		
-	return damage
+	end
+	pdamage = pdamage + getdmg("Q", unit, myHero)
+	pdamage = pdamage + getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2)
+	pdamage = pdamage + EDmg
+	pdamage = pdamage + getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2)
+	local Damages = {CurrentDamage = damage, PossibleDamage = pdamage}		
+	return Damages
 end
 
 local function CalcTurretDmg()
@@ -540,6 +545,7 @@ local CastingR = myHero.activeSpell.name == "YoneR"
 if target == nil then return end
 	if IsValid(target) then
 		self:CalcEDmg(target)
+		local FullDmg = CalcFullDmg(target)
 		local EnemyCount = GetEnemyCount(2000, myHero)
 
 		local Attacking = false
@@ -573,16 +579,15 @@ if target == nil then return end
 		local E1Ready = self.Menu.ComboSet.E.UseE1:Value() and Ready(_E) and myHero.mana == 0
 		local RReady = Ready(_R) and self.Menu.ComboSet.R.UseR1:Value()
 		if RReady and self:CastingChecks() then
-			local FullDmg = CalcFullDmg(target)
 
 			if self.Menu.ComboSet.R.UseR3:Value() then
 				if EnemyCount >= self.Menu.ComboSet.R.RCount:Value() then
 					self:CastRAOE(target)
 				end	
 			end			
-			if self.Menu.ComboSet.R.UseR2:Value() then
+			if self.Menu.ComboSet.R.UseR2:Value() and (myHero:GetSpellData(_Q).name == "YoneQ" or myHero.mana == 0) then
 				if myHero.pos:DistanceTo(target.pos) <= 900 then
-					if FullDmg >= target.health then
+					if FullDmg.CurrentDamage >= target.health then
 						self:CastR(target)
 					end
 				end
@@ -592,11 +597,13 @@ if target == nil then return end
 		local QReady = Ready(_Q) and self.Menu.ComboSet.Q.UseQ1:Value()
 		if QReady and self:CastingChecks() and not Attacking then			
 			if myHero:GetSpellData(_Q).name == "YoneQ" then
-				if myHero.pos:DistanceTo(target.pos) <= 450 then
-					self:CastQShort(target)
-				else
-					if self.Menu.ComboSet.Q.UseQ2:Value() then
-						self:StackQMinion()
+				if (myHero.mana == 0 or not Ready(_R) or target.health > FullDmg.CurrentDamage) then
+					if myHero.pos:DistanceTo(target.pos) <= 450 then
+						self:CastQShort(target)
+					else
+						if self.Menu.ComboSet.Q.UseQ2:Value() then
+							self:StackQMinion()
+						end
 					end
 				end
 			else
@@ -614,7 +621,7 @@ if target == nil then return end
 		end	
 			
 
-		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking then			
+		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking and (myHero.mana == 0 or not Ready(_R) or target.health > FullDmg.CurrentDamage) then			
 			local CheckCount = GetEnemyCount(600, myHero)
 			--print(CheckCount)
 			if self.Menu.ComboSet.W.UseW2:Value() and CheckCount >= 2 then
@@ -980,8 +987,17 @@ function Yone:Draw()
 			local EnemyCount = GetEnemyCount(2000, myHero)
 			if EnemyCount == 1 then
 				local FullDmg = CalcFullDmg(target)
-				if FullDmg >= target.health then
-					Draw.Text("Kill him", 15, target.pos2D.x, target.pos2D.y, Draw.Color(0xFF00FF00))
+				local DrawDamage = math.floor(FullDmg.CurrentDamage)
+				local DrawPossibleDamage = math.floor(FullDmg.PossibleDamage)
+				local DrawTargetHealth = math.floor(target.health)
+				local DrawMaxTargetHealth = math.floor(target.maxHealth)
+				if FullDmg.CurrentDamage >= target.health then
+					Draw.Text("Kill Him  " .. DrawDamage .. "/" .. DrawTargetHealth, 15, target.pos2D.x, target.pos2D.y-10, Draw.Color(0xFF00FF00))
+				else
+					Draw.Text("" .. DrawDamage .. "/" .. DrawTargetHealth, 15, target.pos2D.x, target.pos2D.y-10, Draw.Color(0xFFff0000))
+				end
+				if FullDmg.PossibleDamage >= target.health then
+					Draw.Text("Max Damage  " .. DrawPossibleDamage .. "/" .. DrawTargetHealth, 15, target.pos2D.x, target.pos2D.y+6, Draw.Color(0xFFcc5500))
 				end
 			end
 		end	
