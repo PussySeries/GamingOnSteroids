@@ -61,28 +61,33 @@ end
 local function CalcFullDmg(unit, DmgSpell)
 	local QDmg     = Ready(_Q) and getdmg("Q", unit, myHero) or 0
 	local WDmg     = Ready(_W) and getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2) or 0
-	local RDmg 	   = Ready(_R) and getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2) or 0
-	local AADmg	   = (getdmg("AA", unit, myHero) * 2) + ((CalcPhysicalDamage(myHero, unit, 0.5 * myHero.totalDamage) + CalcMagicalDamage(myHero, unit, 0.5 * myHero.totalDamage)) * 2)	
-	local CalcEDmg = (QDmg + WDmg + RDmg + AADmg) / 100
-	local EDmg     = ((myHero:GetSpellData(_E).level * 2.5) + 22.5) * CalcEDmg
-	local damage   = AADmg
-	local pdamage = AADmg
+	local RDmg 	   = Ready(_R) and (getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2))*0.8 or 0
+
+	local AADmg	   		= getdmg("AA", unit, myHero)
+	local AACritDmg		= CalcPhysicalDamage(myHero, unit, AADmg * 1.8)
+	local AADmg2		= CalcPhysicalDamage(myHero, unit, myHero.totalDamage*0.5) + CalcMagicalDamage(myHero, unit, myHero.totalDamage*0.5)
+	local AACritDmg2	= CalcPhysicalDamage(myHero, unit, (myHero.totalDamage*0.9)) + CalcMagicalDamage(myHero, unit, (myHero.totalDamage*0.9))
+	local CalcEDmg = 0
+
+	local AADmgFinal = ((AADmg + AADmg2)/2) * ((myHero.critChance*0.9)+1)
+
+	local EDmgPercent     = 1 + ((myHero:GetSpellData(_E).level * 2.5) + 22.5)/100
+	local damage   = 0
+	local pdamage  = 0
 	if Ready(_Q) then
-		damage = damage + getdmg("Q", unit, myHero)
+		damage = damage + getdmg("Q", unit, myHero) + AADmgFinal
 	end	
 	if Ready(_W) then
-		damage = damage + getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2)
-	end	
-	if Ready(_E) or myHero.mana > 0 then
-		damage = damage + EDmg
+		damage = damage + getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2) + AADmgFinal
 	end	
 	if Ready(_R) then
-		damage = damage + getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2)
+		damage = damage + (getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2)) *0.8 + AADmgFinal
 	end
-	pdamage = pdamage + getdmg("Q", unit, myHero)
-	pdamage = pdamage + getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2)
-	pdamage = pdamage + EDmg
-	pdamage = pdamage + getdmg("R", unit, myHero, 1) + getdmg("R", unit, myHero, 2)
+	if Ready(_E) or myHero.mana > 0 then
+		damage = damage * EDmgPercent
+	end	
+	pdamage = (QDmg + WDmg + RDmg + (AADmgFinal*3)) * EDmgPercent
+	--print(RDmg)
 	local Damages = {CurrentDamage = damage, PossibleDamage = pdamage}		
 	return Damages
 end
@@ -148,6 +153,7 @@ local EDmgPred = 0
 local Added = false
 local AutoAttacks = 0
 local LastSpellName = ""
+local target = nil
 local LastTargetHealth = 10000
 
 
@@ -274,9 +280,9 @@ if IsLoaded and not PredLoaded then
 	end, 0.1)
 	PredLoaded = true
 end		
-
+target = GetTarget(1300)
 local target2 = GetTarget(1300)
-self:CalcEDmg(target2)   
+self:CalcEDmg(target)   
 
 if MyHeroNotReady() then return end
 
@@ -450,7 +456,6 @@ function Yone:KsUlt()
 end
 
 function Yone:Combo()
-local target = GetTarget(1300)
 local CastingE = myHero.activeSpell.name == "YoneE"
 local CastingR = myHero.activeSpell.name == "YoneR"  	
 if target == nil then return end
@@ -509,24 +514,6 @@ if target == nil then return end
 					end
 				end
 			end
-		end	
-		
-		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking then			
-
-			if self.Menu.ComboSet.W.UseW2:Value() then 
-				local CheckCount = GetEnemyCount(600, myHero)
-				if CheckCount >= 2 then
-					self:CastW()
-				else
-					if myHero.pos:DistanceTo(target.pos) <= 500 then
-						Control.CastSpell(HK_W, target.pos)
-					end
-				end	
-			else
-				if myHero.pos:DistanceTo(target.pos) <= 500 then
-					Control.CastSpell(HK_W, target.pos)
-				end
-			end	
 		end			
 
 		local QReady = Ready(_Q) and self.Menu.ComboSet.Q.UseQ1:Value()
@@ -554,11 +541,24 @@ if target == nil then return end
 				end
 			end
 		end	
+
+		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking then			
+			local CheckCount = GetEnemyCount(600, myHero)
+			local CheckTargetCount = GetEnemyCount(250, target)
+			local RPrimed = (myHero.mana > 0 and Ready(_R) and target.health < FullDmg.CurrentDamage)
+			if self.Menu.ComboSet.W.UseW2:Value() and CheckCount >= 2 and (CheckTargetCount < 2 or not RPrimed) then 
+				self:CastW()
+			elseif not RPrimed then
+				if myHero.pos:DistanceTo(target.pos) <= 500 then
+					Control.CastSpell(HK_W, target.pos)
+				end
+			end	
+		end	
+
 	end
 end	
 
 function Yone:Harass()
-local target = GetTarget(1300)
 
 local Attacking = false
 if _G.SDK then
@@ -928,8 +928,7 @@ function Yone:Draw()
 		Draw.Circle(myHero, 600, 1, Draw.Color(225, 225, 125, 10))
 	end
 	
-	if self.Menu.MiscSet.Drawing.Kill:Value() then
-		local target = GetTarget(1500)     	
+	if self.Menu.MiscSet.Drawing.Kill:Value() then  	
 		if target == nil then return end
 
 		if IsValid(target) then
