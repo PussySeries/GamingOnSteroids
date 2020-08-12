@@ -11,7 +11,7 @@ Data = {
     Champions = {
         Yone = {
             Changelog = "Yone Changelog Here",
-            Version = 0.07,
+            Version = 0.08,
         },
     },
 }
