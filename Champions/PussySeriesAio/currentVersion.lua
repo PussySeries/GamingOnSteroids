@@ -9,6 +9,12 @@ Data = {
     },
 
     Champions = {
+		
+        Gangplank = {
+            Changelog = "Gangplank Changelog Here",
+            Version = 0.01,
+        },		
+		
         Yone = {
             Changelog = "Yone Changelog Here",
             Version = 0.01,
