@@ -10,27 +10,18 @@ local function GetDistance(pos1, pos2)
 end
 
 local function SetAttack(bool)
-	if _G.EOWLoaded then
-		EOW:SetAttacks(bool)
-	elseif _G.SDK then                                                        
+	if _G.SDK then                                                        
 		_G.SDK.Orbwalker:SetAttack(bool)
 	elseif _G.PremiumOrbwalker then
 		_G.PremiumOrbwalker:SetAttack(bool)	
-	else
-		GOS.BlockAttack = not bool
 	end
-
 end
 
 local function SetMovement(bool)
-	if _G.EOWLoaded then
-		EOW:SetMovements(bool)
-	elseif _G.SDK then
+	if _G.SDK then
 		_G.SDK.Orbwalker:SetMovement(bool)
 	elseif _G.PremiumOrbwalker then
 		_G.PremiumOrbwalker:SetMovement(bool)	
-	else
-		GOS.BlockMovement = not bool
 	end
 end
 
@@ -227,30 +218,23 @@ function Yone:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("Draw", function() self:Draw() end)
 	
-	QData = {Type = _G.SPELLTYPE_LINE, Delay = 0.35, Radius = 120, Range = 900, Speed = 1500, Collision = false}
+	--//// Q-Prediction Data ////--
 	QspellData = {speed = 1700, range = 900, delay = 0.35, radius = 120, collision = {nil}, type = "linear"}
-
-	QShortData = {Type = _G.SPELLTYPE_LINE, Delay = 0.35, Radius = 80, Range = 475, Speed = 1500, Collision = false}
 	QShortspellData = {speed = 1700, range = 475, delay = 0.35, radius = 80, collision = {nil}, type = "linear"}
-
-
-	Q2Data = {Type = _G.SPELLTYPE_LINE, Delay = 0.65, Radius = 80, Range = 1150, Speed = 1500, Collision = false}
 	Q2spellData = {speed = 1700, range = 1150, delay = 0.65, radius = 80, collision = {nil}, type = "linear"}
 
+	--//// W-Prediction Data ////--
 	WspellData = {speed = 2000, range = 600, delay = 0.15, radius = 0, angle = 80, collision = {nil}, type = "conic"}
 
-	RData = {Type = _G.SPELLTYPE_LINE, Delay = 0.5, Radius = 120, Range = 900, Speed = 1500, Collision = false}
+	--//// R-Prediction Data ////--
 	RspellData = {speed = 1500, range = 900, delay = 0.5, radius = 120, collision = {nil}, type = "linear"}
-
-	R2Data = {Type = _G.SPELLTYPE_LINE, Delay = 0.8, Radius = 120, Range = 1200, Speed = 1500, Collision = false}
 	R2spellData = {speed = 1500, range = 1200, delay = 0.8, radius = 120, collision = {nil}, type = "linear"}	
-
 end
 
 function Yone:LoadMenu()                     	
 									 -- MainMenu --
 	self.Menu = MenuElement({type = MENU, id = "PussySeries".. myHero.charName, name = "Yone"})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.04"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.07"}})
 	
 	
 									  -- Combo --
@@ -340,11 +324,8 @@ function Yone:LoadMenu()
 	self.Menu.MiscSet.Drawing:MenuElement({id = "Kill", name = "Draw KillText 1 vs 1", value = true})		
 end
 
-local UltKill = false	
-local EPos = false
-local CanCast = false
-
 function Yone:Tick()
+
 if IsLoaded and not PredLoaded then
 	DelayAction(function()
 		if self.Menu.MiscSet.Pred.Change:Value() == 1 then
@@ -354,20 +335,12 @@ if IsLoaded and not PredLoaded then
 		end
 	end, 0.1)
 	PredLoaded = true
-end	
-		
-if Ready(_E) and myHero.mana == 0 then
-	EPos = true
-else
-	EPos = false
-end	
+end		
 
 local target2 = GetTarget(1300)
 self:CalcEDmg(target2)   
 
 if MyHeroNotReady() then return end
-
-
 
 self:ProcessSpells()
 self:KsUlt()
@@ -512,14 +485,14 @@ function Yone:CalcEDmg(unit)
 end
 
 function Yone:KsUlt()
-	if Ready(_R) and self.Menu.ks.UseR:Value() and CastingChecks then
+	if Ready(_R) and self.Menu.ks.UseR:Value() then
 		for i, Enemy in ipairs(GetEnemyHeroes()) do
 			if Enemy and myHero.pos:DistanceTo(Enemy.pos) <= 1000 and IsValid(Enemy) then
 				local RDmg  = getdmg("R", Enemy, myHero, 1) + getdmg("R", Enemy, myHero, 2)
 				local AADmg = getdmg("AA", Enemy, myHero) + (CalcPhysicalDamage(myHero, Enemy, 0.5 * myHero.totalDamage) + CalcMagicalDamage(myHero, Enemy, 0.5 * myHero.totalDamage))
 				local KSDmg = RDmg + AADmg
 
-				if KSDmg >= Enemy.health and GetEnemyCount(self.Menu.ks.RRange:Value(), Enemy) == 1 then
+				if KSDmg >= Enemy.health and GetEnemyCount(self.Menu.ks.RRange:Value(), Enemy) == 1 and self:CastingChecks() then
 					if self.Menu.MiscSet.Pred.Change:Value() == 1 then
 						local pred = _G.PremiumPrediction:GetPrediction(myHero, Enemy, RspellData)
 						if pred.CastPos and ConvertToHitChance(self.Menu.MiscSet.Pred.PredR:Value(), pred.HitChance) then
@@ -543,7 +516,9 @@ local target = GetTarget(1300)
 local CastingE = myHero.activeSpell.name == "YoneE"
 local CastingR = myHero.activeSpell.name == "YoneR"  	
 if target == nil then return end
+	
 	if IsValid(target) then
+		
 		self:CalcEDmg(target)
 		local FullDmg = CalcFullDmg(target)
 		local EnemyCount = GetEnemyCount(2000, myHero)
@@ -551,7 +526,11 @@ if target == nil then return end
 		local Attacking = false
 		if _G.SDK then
 			Attacking = _G.SDK.Attack:IsActive()
+		elseif _G.PremiumOrbwalker then
+			Attacking =_G.PremiumOrbwalker:IsAutoAttacking()	-- added Prem.Orb Attack Check		
 		end
+				
+		
 		if self.Menu.ComboSet.E.UseE4:Value() and myHero.mana > 0 and Ready(_E) and not (myHero.pathing and myHero.pathing.isDashing) and not CastingE and not CastingR then
 			local EPercent = 0.225 + (0.025*myHero:GetSpellData(_E).level)
 			if target.health <= EDmgPred * EPercent then
@@ -593,6 +572,24 @@ if target == nil then return end
 				end
 			end
 		end	
+		
+		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking then			
+
+			if self.Menu.ComboSet.W.UseW2:Value() then 
+				local CheckCount = GetEnemyCount(600, myHero)
+				if CheckCount >= 2 then
+					self:CastW()
+				else
+					if myHero.pos:DistanceTo(target.pos) <= 500 then
+						Control.CastSpell(HK_W, target.pos)
+					end
+				end	
+			else
+				if myHero.pos:DistanceTo(target.pos) <= 500 then
+					Control.CastSpell(HK_W, target.pos)
+				end
+			end	
+		end			
 
 		local QReady = Ready(_Q) and self.Menu.ComboSet.Q.UseQ1:Value()
 		if QReady and self:CastingChecks() and not Attacking then			
@@ -619,21 +616,6 @@ if target == nil then return end
 				end
 			end
 		end	
-			
-
-		if self.Menu.ComboSet.W.UseW1:Value() and Ready(_W) and self:CastingChecks() and not Attacking and (myHero.mana == 0 or not Ready(_R) or target.health > FullDmg.CurrentDamage) then			
-			local CheckCount = GetEnemyCount(600, myHero)
-			--print(CheckCount)
-			if self.Menu.ComboSet.W.UseW2:Value() and CheckCount >= 2 then
-				--print("W CheckCount")
-				self:CastW()
-			else
-				--print("W CheckCount2")
-				if myHero.pos:DistanceTo(target.pos) <= 500 then
-					Control.CastSpell(HK_W, target.pos)
-				end
-			end	
-		end	
 	end
 end	
 
@@ -643,9 +625,14 @@ local target = GetTarget(1300)
 local Attacking = false
 if _G.SDK then
 	Attacking = _G.SDK.Attack:IsActive()
-end     	
+elseif _G.PremiumOrbwalker then
+	Attacking =_G.PremiumOrbwalker:IsAutoAttacking()	-- added Prem.Orb Attack Check		
+end
+     	
 if target == nil then return end 
+	
 	if IsValid(target) then
+		
 		if self.Menu.Harass.UseE2:Value() and myHero.mana > 0 and Ready(_E) then
 			if myHero.health/myHero.maxHealth <= self.Menu.Harass.Hp:Value() / 100 then
 				Control.CastSpell(HK_E)
@@ -755,6 +742,7 @@ function Yone:CastE1Smart(unit)
 	if mode == "Harass" then
 		E1Ready = self.Menu.Harass.UseE:Value() and Ready(_E) and myHero.mana == 0
 	end
+	
 	if E1Ready then
 		local EnemyCount = GetEnemyCount(600, unit)
 		if EnemyCount > 1 then
@@ -780,7 +768,9 @@ function Yone:CastQ(unit)
 	if mode == "Harass" then
 		E1Ready = self.Menu.Harass.UseE:Value() and Ready(_E) and myHero.mana == 0
 	end
+	
 	if myHero.mana > 0 or not E1Ready or GetDistance(unit.pos) < 200 then
+		
 		if self.Menu.MiscSet.Pred.Change:Value() == 1 then
 			local pred = _G.PremiumPrediction:GetPrediction(myHero, unit, QspellData)
 			if pred.CastPos and ConvertToHitChance(self.Menu.MiscSet.Pred.PredQ:Value(), pred.HitChance) then
@@ -789,7 +779,8 @@ function Yone:CastQ(unit)
 		else
 			self:CastQGGPred(unit)	
 		end
-	elseif E1Ready then 
+	
+	elseif E1Ready then
 		self:CastE1Smart(unit)
 	end
 end
@@ -814,7 +805,7 @@ function Yone:CastW()
 					Control.CastSpell(HK_W, pred.CastPos)
 				end
 			else
-				self:CastWGGPred(2, 0.5)	
+				self:CastWGGPred()	
 			end	
 		end
 	end
@@ -826,6 +817,7 @@ function Yone:CastR(unit)
 	if mode == "Harass" then
 		E1Ready = self.Menu.Harass.UseE:Value() and Ready(_E) and myHero.mana == 0
 	end
+	
 	if myHero.mana > 0 or not E1Ready then
 		if self.Menu.MiscSet.Pred.Change:Value() == 1 then
 			local pred = _G.PremiumPrediction:GetPrediction(myHero, unit, R2spellData)
@@ -857,23 +849,32 @@ function Yone:CastRAOE(unit)
 				end
 			end				
 		end
-	else
-		for i, Enemy in ipairs(GetEnemyHeroes()) do
-			if Enemy and myHero.pos:DistanceTo(Enemy.pos) <= 900 and IsValid(Enemy) then
-				local RPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 150, Range = 1000, Speed = 1550, Collision = false})
-				RPrediction:GetPrediction(unit, myHero)
-				if RPrediction:CanHit(self.Menu.MiscSet.Pred.PredR:Value()+1) then
-					local count = GetLineTargetCount(myHero.pos, Enemy.pos, 0.75, 1700, 300, 900)
-					if count >= self.Menu.ComboSet.R.RCount:Value() then
-						if myHero.mana > 0 or not E1Ready then					
-							Control.CastSpell(HK_R, RPrediction.CastPosition)	
-						elseif E1Ready then 
-							Control.CastSpell(HK_E, Enemy.pos)
-						end
-					end
+	else						-- GG-AOE-Prediction --
+		local RPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.8, Radius = 120, Range = 1200, Speed = 1500, Collision = false})
+		local minhitchance = self.Menu.MiscSet.Pred.PredR:Value()+1
+		local aoeresult = RPrediction:GetAOEPrediction(myHero)
+		local bestaoe = nil
+		local bestcount = 0
+		local bestdistance = 1000
+	   
+		for i = 1, #aoeresult do
+			local aoe = aoeresult[i]
+			if aoe.HitChance >= minhitchance and aoe.TimeToHit <= 0.8 and aoe.Count >= self.Menu.ComboSet.R.RCount:Value() then
+				if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
+					bestdistance = aoe.Distance
+					bestcount = aoe.Count
+					bestaoe = aoe
 				end
 			end
 		end
+		
+		if bestaoe then
+			if myHero.mana > 0 or not E1Ready then
+				Control.CastSpell(HK_R, bestaoe.CastPosition)
+			elseif E1Ready then 
+				self:CastE1Smart(unit)
+			end			 
+		end	
 	end
 end	
 
@@ -883,6 +884,7 @@ function Yone:CastQAOE(unit)
 	if mode == "Harass" then
 		E1Ready = self.Menu.Harass.UseE:Value() and Ready(_E) and myHero.mana == 0
 	end
+	
 	if self.Menu.MiscSet.Pred.Change:Value() == 1 then
 		local pred = _G.PremiumPrediction:GetAOEPrediction(myHero, unit, QspellData)
 		if pred.CastPos and ConvertToHitChance(self.Menu.MiscSet.Pred.PredQ:Value(), pred.HitChance) then
@@ -894,28 +896,37 @@ function Yone:CastQAOE(unit)
 				end
 			end	
 		end
-	else
-		for i, Enemy in ipairs(GetEnemyHeroes()) do
-			if Enemy and myHero.pos:DistanceTo(Enemy.pos) <= 900 and IsValid(Enemy) then
-				local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 100, Range = 950, Speed = 1700, Collision = false})
-				QPrediction:GetPrediction(unit, myHero)
-				if QPrediction:CanHit(self.Menu.MiscSet.Pred.PredQ:Value()+1) then
-					local count = GetLineTargetCount(myHero.pos, Enemy.pos, 0.75, 1700, 300, 900)
-					if count >= 2 then
-						if myHero.mana > 0 or not E1Ready then					
-							Control.CastSpell(HK_Q, RPrediction.CastPosition)	
-						elseif E1Ready then 
-							Control.CastSpell(HK_E, Enemy.pos)
-						end
-					end
+	else						-- GG-AOE-Prediction --
+		local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 120, Range = 900, Speed = 1700, Collision = false})
+		local minhitchance = self.Menu.MiscSet.Pred.PredQ:Value()+1
+		local aoeresult = QPrediction:GetAOEPrediction(myHero)
+		local bestaoe = nil
+		local bestcount = 0
+		local bestdistance = 1000
+	   
+		for i = 1, #aoeresult do
+			local aoe = aoeresult[i]
+			if aoe.HitChance >= minhitchance and aoe.TimeToHit <= 0.4 and aoe.Count >= 2 then
+				if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
+					bestdistance = aoe.Distance
+					bestcount = aoe.Count
+					bestaoe = aoe
 				end
 			end
 		end
-	end
+		
+		if bestaoe then
+			if myHero.mana > 0 or not E1Ready then
+				Control.CastSpell(HK_Q, bestaoe.CastPosition)
+			elseif E1Ready then 
+				self:CastE1Smart(unit)
+			end			 
+		end
+	end	
 end	
 
 function Yone:CastQGGPred(unit)
-	local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 100, Range = 900, Speed = 1700, Collision = false})
+	local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 120, Range = 900, Speed = 1700, Collision = false})
 	QPrediction:GetPrediction(unit, myHero)
 	if QPrediction:CanHit(self.Menu.MiscSet.Pred.PredQ:Value()+1) then
 		Control.CastSpell(HK_Q, QPrediction.CastPosition)
@@ -931,16 +942,16 @@ function Yone:CastQShortGGPred(unit)
 end
 
 function Yone:CastWGGPred(mintargets, maxtimetohit)
-    local RPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 300, Range = 600, Speed = 2000, Collision = false})
+    local WPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 300, Range = 600, Speed = 2000, Collision = false})
 	local minhitchance = self.Menu.MiscSet.Pred.PredW:Value()+1
-    local aoeresult = RPrediction:GetAOEPrediction(myHero)
+    local aoeresult = WPrediction:GetAOEPrediction(myHero)
     local bestaoe = nil
     local bestcount = 0
     local bestdistance = 1000
    
 	for i = 1, #aoeresult do
         local aoe = aoeresult[i]
-        if aoe.HitChance >= minhitchance and aoe.TimeToHit <= maxtimetohit and aoe.Count >= mintargets then
+        if aoe.HitChance >= minhitchance and aoe.TimeToHit <= 0.5 and aoe.Count >= 2 then
             if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
                 bestdistance = aoe.Distance
                 bestcount = aoe.Count
@@ -955,7 +966,7 @@ function Yone:CastWGGPred(mintargets, maxtimetohit)
 end
 
 function Yone:CastRGGPred(unit)
-	local RPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 150, Range = 1000, Speed = 1550, Collision = false})
+	local RPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.8, Radius = 120, Range = 1200, Speed = 1500, Collision = false})
 	RPrediction:GetPrediction(unit, myHero)
 	if RPrediction:CanHit(self.Menu.MiscSet.Pred.PredR:Value()+1) then
 		Control.CastSpell(HK_R, RPrediction.CastPosition)			
