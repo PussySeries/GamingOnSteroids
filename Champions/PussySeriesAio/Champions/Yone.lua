@@ -58,68 +58,6 @@ local function IsUnderTurret(unit)
     return false
 end
 
-local function VectorPointProjectionOnLineSegment(v1, v2, v)
-	local cx, cy, ax, ay, bx, by = v.x, v.z, v1.x, v1.z, v2.x, v2.z
-	local rL = ((cx - ax) * (bx - ax) + (cy - ay) * (by - ay)) / ((bx - ax) ^ 2 + (by - ay) ^ 2)
-	local pointLine = { x = ax + rL * (bx - ax), y = ay + rL * (by - ay) }
-	local rS = rL < 0 and 0 or (rL > 1 and 1 or rL)
-	local isOnSegment = rS == rL
-	local pointSegment = isOnSegment and pointLine or { x = ax + rS * (bx - ax), y = ay + rS * (by - ay) }
-	return pointSegment, pointLine, isOnSegment
-end 
-
-local function GetPathNodes(unit)
-	local nodes = {}
-	TableInsert(nodes, unit.pos)
-	if unit.pathing.hasMovePath then
-		for i = unit.pathing.pathIndex, unit.pathing.pathCount do
-			path = unit:GetPath(i)
-			TableInsert(nodes, path)
-		end
-	end		
-	return nodes
-end
-
-local function GetTargetMS(target)
-	local ms = target.ms
-	return ms
-end
-
-local function PredictUnitPosition(unit, delay)
-	local predictedPosition = unit.pos
-	local timeRemaining = delay
-	local pathNodes = GetPathNodes(unit)
-	for i = 1, #pathNodes -1 do
-		local nodeDistance = GetDistance(pathNodes[i], pathNodes[i +1])
-		local nodeTraversalTime = nodeDistance / GetTargetMS(unit)
-			
-		if timeRemaining > nodeTraversalTime then
-			timeRemaining =  timeRemaining - nodeTraversalTime
-			predictedPosition = pathNodes[i + 1]
-		else
-			local directionVector = (pathNodes[i+1] - pathNodes[i]):Normalized()
-			predictedPosition = pathNodes[i] + directionVector *  GetTargetMS(unit) * timeRemaining
-			break;
-		end
-	end
-	return predictedPosition
-end
-
-local function GetLineTargetCount(source, Pos, delay, speed, width, range)
-	local Count = 0
-	for i, hero in ipairs(GetEnemyHeroes()) do
-		if hero and myHero.pos:DistanceTo(hero.pos) <= range and IsValid(hero) then
-			
-			local predictedPos = PredictUnitPosition(hero, delay+ GetDistance(source, hero.pos) / speed)
-			local proj1, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(source, Pos, predictedPos)
-			if proj1 and isOnSegment and (GetDistanceSqr(predictedPos, proj1) <= (hero.boundingRadius + width) * (hero.boundingRadius + width)) then
-				Count = Count + 1
-			end
-		end
-	end
-	return Count
-end
-
 local function CalcFullDmg(unit, DmgSpell)
 	local QDmg     = Ready(_Q) and getdmg("Q", unit, myHero) or 0
 	local WDmg     = Ready(_W) and getdmg("W", unit, myHero, 1) + getdmg("W", unit, myHero, 2) or 0
@@ -234,7 +172,7 @@ end
 function Yone:LoadMenu()                     	
 									 -- MainMenu --
 	self.Menu = MenuElement({type = MENU, id = "PussySeries".. myHero.charName, name = "Yone"})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.07"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.08"}})
 	
 	
 									  -- Combo --
