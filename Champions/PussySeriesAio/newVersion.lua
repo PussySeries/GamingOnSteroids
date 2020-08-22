@@ -13,7 +13,12 @@ Data = {
 	Gangplank = {
             Changelog = "Gangplank Changelog Here",
             Version = 0.01,
-        },	
+        },
+		
+        LeeSin = {
+            Changelog = "LeeSin Changelog Here",
+            Version = 0.01,
+        },		
 		
         Yone = {
             Changelog = "Yone Changelog Here",
