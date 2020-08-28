@@ -1,7 +1,7 @@
 -- [ AutoUpdate ]
 do
     
-    local Version = 0.08
+    local Version = 0.09
     
     local Files = {
         Lua = {
@@ -286,7 +286,7 @@ end
 function PussyUtility:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "PUtility", name = "PussySeries Utility"})
 	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate & SeriesDev"}})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.08"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.09"}})
 
 	-- Movenment Tracker --	
 	self.Menu:MenuElement({id = "circle", name = "Movement Circle", type = MENU })	
@@ -1055,8 +1055,7 @@ function PussyUtility:DrawWard()
 				if self.Menu.Warding["Trinket"].VisionDisplay:Value() and ward.charName == "YellowTrinket" then
 					DrawCircle(ward.pos,900,3,WardColors[type]);
 				end			
-
-				if self.Menu.Warding[type].TimerDisplay and self.Menu.Warding[type].TimerDisplay:Value() then
+				if self.Menu.Warding["Trinket"].TimerDisplay:Value() and ward.charName == "YellowTrinket" then
 					DrawText(IntegerToMinSec(mathceil(life)),16,ward.pos2D.x,ward.pos2D.y-14,WardColors[type]);
 				end
 			end
