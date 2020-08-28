@@ -168,6 +168,27 @@ local function IsMoving(unit)
     return unit.pos.x - mfloor(unit.pos.x) ~= 0
 end	
 
+local function GetEnemyHeroes()
+    local _EnemyHeroes = {}
+    for i = 1, GameHeroCount() do
+        local unit = GameHero(i)
+        if unit.isEnemy then
+            TableInsert(_EnemyHeroes, unit)
+        end
+    end
+    return _EnemyHeroes
+end 
+
+local function CheckLoadedEnemyies()
+	local count = 0
+	for i, unit in ipairs(GetEnemyHeroes()) do
+        if unit and unit.isEnemy then
+		count = count + 1
+		end
+	end
+	return count
+end
+
 local function EnemiesAround(pos, range)
 	local x = 0
 	for i = 1, GameHeroCount() do
@@ -364,62 +385,71 @@ function PussyUtility:LoadMenu()
 		self.Menu.lvl:MenuElement({id = "LvL".. myHero.charName, name = "Auto level start -->", value = 2, min = 1, max = 6, step = 1})
 		self.Menu.lvl:MenuElement({id = myHero.charName, name = "Skill Order", value = 1, drop = {"QWE", "WEQ", "EQW", "EWQ", "WQE", "QEW"}})
 				
-end		
+end
+
+local heroes = false		
 
 function PussyUtility:OnDraw()			
-	self:DrawJungle() 
-	self:DrawMovement() 
-	self:Recall() 
-	self:DrawGank()
-	self:DrawCD() 		
-	self:DrawWard() 
-		
-	if self.FoundTrapChamp and self.Menu.Trap.TEnabled:Value() then
-		self:TrapTracker() 
+	if heroes then
+		self:DrawJungle() 
+		self:DrawMovement() 
+		self:Recall() 
+		self:DrawGank()
+		self:DrawCD() 		
+		self:DrawWard() 
+			
+		if self.FoundTrapChamp and self.Menu.Trap.TEnabled:Value() then
+			self:TrapTracker() 
+		end
 	end	
 end
 
 function PussyUtility:Tick()
-	--local currSpell = myHero.activeSpell
-	--if currSpell and currSpell.valid and currSpell.isChanneling then
-		--print(currSpell.name)
-	--end	
+	if heroes == false then 
+		local EnemyCount = CheckLoadedEnemyies()		
+		if EnemyCount < 1 then
+			GetEnemyHeroes()
+		else
+			heroes = true
+		end
+	else	
 
-	for i = 1, GameHeroCount() do
-	local hero = GameHero(i)
-	
-		--OnGainVision --
-		if invChamp[hero.networkID] ~= nil and invChamp[hero.networkID].status == false and hero.visible and not hero.dead then
-			if myHero.pos:DistanceTo(hero.pos) <= self.Menu.alert.range:Value() + 100 and GetTickCount()-invChamp[hero.networkID].lastTick > 5000 then
-				OnGainVision[hero.networkID].status = true
-				OnGainVision[hero.networkID].tick = GetTickCount()
-			end
-			newExp[hero.networkID] = hero.levelData.exp
-			oldExp[hero.networkID] = hero.levelData.exp
-		end
-		if hero and not hero.dead and hero.isEnemy and hero.visible then
-			invChamp[hero.networkID].status = hero.visible
-			isRecalling[hero.networkID].spendTime = 0
-			newExp[hero.networkID] = hero.levelData.exp
-			local hehTicker = GetTickCount()
-			if (before_rip_tick + 10000) < hehTicker then
-				oldExp[hero.networkID] = hero.levelData.exp
-			before_rip_tick = hehTicker
-			end
-		end
+		for i = 1, GameHeroCount() do
+		local hero = GameHero(i)
 		
-		--OnLoseVision --
-		if invChamp[hero.networkID] ~= nil and invChamp[hero.networkID].status == true and not hero.visible and not hero.dead then
-			invChamp[hero.networkID].lastTick = GetTickCount()
-			invChamp[hero.networkID].lastWP = hero.posTo
-			invChamp[hero.networkID].lastPos = hero.pos
-			invChamp[hero.networkID].status = false
-		end	
-	end
-	self:ScanCheck()
-	self:AutoLevel()
-	self:TowerTracker()
-	self:CheckJungleCamps()					
+			--OnGainVision --
+			if invChamp[hero.networkID] ~= nil and invChamp[hero.networkID].status == false and hero.visible and not hero.dead then
+				if myHero.pos:DistanceTo(hero.pos) <= self.Menu.alert.range:Value() + 100 and GetTickCount()-invChamp[hero.networkID].lastTick > 5000 then
+					OnGainVision[hero.networkID].status = true
+					OnGainVision[hero.networkID].tick = GetTickCount()
+				end
+				newExp[hero.networkID] = hero.levelData.exp
+				oldExp[hero.networkID] = hero.levelData.exp
+			end
+			if hero and not hero.dead and hero.isEnemy and hero.visible then
+				invChamp[hero.networkID].status = hero.visible
+				isRecalling[hero.networkID].spendTime = 0
+				newExp[hero.networkID] = hero.levelData.exp
+				local hehTicker = GetTickCount()
+				if (before_rip_tick + 10000) < hehTicker then
+					oldExp[hero.networkID] = hero.levelData.exp
+				before_rip_tick = hehTicker
+				end
+			end
+			
+			--OnLoseVision --
+			if invChamp[hero.networkID] ~= nil and invChamp[hero.networkID].status == true and not hero.visible and not hero.dead then
+				invChamp[hero.networkID].lastTick = GetTickCount()
+				invChamp[hero.networkID].lastWP = hero.posTo
+				invChamp[hero.networkID].lastPos = hero.pos
+				invChamp[hero.networkID].status = false
+			end	
+		end
+		self:ScanCheck()
+		self:AutoLevel()
+		self:TowerTracker()
+		self:CheckJungleCamps()	
+	end	
 end
 
 function PussyUtility:ScanCheck()
