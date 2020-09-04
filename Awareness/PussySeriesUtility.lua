@@ -1,7 +1,7 @@
 -- [ AutoUpdate ]
 do
     
-    local Version = 0.09
+    local Version = 0.10
     
     local Files = {
         Lua = {
@@ -307,7 +307,7 @@ end
 function PussyUtility:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "PUtility", name = "PussySeries Utility"})
 	self.Menu:MenuElement({name = " ", drop = {"Devloped by Pussykate & SeriesDev"}})
-	self.Menu:MenuElement({name = " ", drop = {"Version 0.09"}})
+	self.Menu:MenuElement({name = " ", drop = {"Version 0.10"}})
 
 	-- Movenment Tracker --	
 	self.Menu:MenuElement({id = "circle", name = "Movement Circle", type = MENU })	
@@ -404,15 +404,7 @@ function PussyUtility:OnDraw()
 	end	
 end
 
-function PussyUtility:Tick()
-	if heroes == false then 
-		local EnemyCount = CheckLoadedEnemyies()		
-		if EnemyCount < 1 then
-			GetEnemyHeroes()
-		else
-			heroes = true
-		end
-	else	
+function PussyUtility:Tick()	
 
 		for i = 1, GameHeroCount() do
 		local hero = GameHero(i)
@@ -445,6 +437,15 @@ function PussyUtility:Tick()
 				invChamp[hero.networkID].status = false
 			end	
 		end
+		
+	if heroes == false then 
+		local EnemyCount = CheckLoadedEnemyies()		
+		if EnemyCount < 1 then
+			GetEnemyHeroes()
+		else
+			heroes = true
+		end
+	else		
 		self:ScanCheck()
 		self:AutoLevel()
 		self:TowerTracker()
